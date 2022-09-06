@@ -1,0 +1,52 @@
+#-----------------------------------------------------------------------
+#   Configuration of compile
+#-----------------------------------------------------------------------
+# Variables that must be specified by users
+# (i) Variables related to FDPS
+FDPS_LOC = ../../../src
+FDPS_INC = -I$(FDPS_LOC)
+FDPS_FTN_MOD_DIR = $(FDPS_LOC)/fortran_interface/modules
+
+# (ii) Variables to specify compilers and compile options
+FC=nfort
+FCFLAGS = -std=f2003 -O3 -ffast-math -floop-unroll -finline-functions -mparallel -report-all
+LDFLAGS = -cxxlib
+
+#use_phantom_grape_x86 = yes
+
+# fdps-autotest-set-vars (DO NOT CHANGE THIS LINE)
+
+#-----------------------------------------------------------------------
+#   Source files
+#-----------------------------------------------------------------------
+%.o : %.F90
+	$(FC) $(FCFLAGS) -c $<
+
+SRC_FDPS_MOD = $(wildcard $(FDPS_FTN_MOD_DIR)/*.F90)
+
+OBJ_FDPS_MOD            = $(notdir $(SRC_FDPS_MOD:F90=o))
+
+VPATH = $(FDPS_FTN_MOD_DIR) $(PG_ROOT)
+
+all:    libvenbody.so
+
+libvenbody.so: libvenbody.F90
+	@echo "Building $< ..."
+	@$(FC) $(FCFLAGS) -fpic -shared -o libvenbody.so libvenbody.F90  $(OBJ_FDPS_MOD)
+	@echo "[$< OK]"
+
+libvenbody.F90: $(OBJ_FDPS_MOD)
+
+clean:
+	rm -f *.o *.s *.mod $(TARGET) *.dat
+	rm -f *.L *.LL
+	rm -rf result
+	rm -f FDPS_*.* *.hpp *.cpp
+	rm -f *.so
+
+distclean: clean
+	$(PG_CLEAN)
+	rm -f $(SRC_CXX) FDPS_Manipulators.h  FDPS_module.F90 user_defined.hpp 
+	rm -rf result
+
+# fdps-autotest-run (DO NOT CHANGE THIS LINE)

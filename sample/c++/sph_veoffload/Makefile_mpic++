@@ -1,0 +1,51 @@
+PS_PATH=-I../../../src
+
+#CC = g++
+CC = /usr/mpi/gcc/openmpi-4.0.3rc4/bin/mpic++
+CFLAGS = -O3 -ffast-math -funroll-loops -std=c++11
+CFLAGS += -DPARTICLE_SIMULATOR_THREAD_PARALLEL -fopenmp
+CFLAGS += -DPARTICLE_SIMULATOR_MPI_PARALLEL
+CFLAGS += -D_SX_VEOFFLOAD
+#CFLAGS += -D_SXDEBUG
+
+# fdps-autotest-set-vars (DO NOT CHANGE THIS LINE)
+
+CPPOBJS = main.o
+CPPHDRS = $(wildcard *.h)
+PROGRAM = sph_mpi.out
+LIBSPH = libvesph.so
+
+NCC = nc++
+NCFLAGS = -std=c++11 -O3 -ffast-math -floop-unroll -report-all
+NCFLAGS += -finline-functions
+NCFLAGS += -finline-max-depth=5
+NCFLAGS += -finline-max-function-size=1000
+NCFLAGS += -finline-max-times=100
+#NCFLAGS += -D_SXDEBUG
+
+
+all:	$(PROGRAM) $(LIBSPH)
+
+$(PROGRAM): $(CPPOBJS) $(CPPHDRS)
+	@echo "Linking object files..."
+	@$(CC) $(CFLAGS) $(WARNINGS) $(CPPOBJS) -o $(PROGRAM) -L/opt/nec/ve/veos/lib64 -Wl,-rpath=/opt/nec/ve/veos/lib64 -lveo
+	@echo "Link Success! [$(PROGRAM)]"
+
+main.o:	main.cpp $(CPPHDRS)
+	@echo "Building $< ..."
+	@$(CC) -c main.cpp $(CFLAGS) $(WARNINGS) $(PS_PATH) -I/opt/nec/ve/veos/include
+	@echo "[$< OK]"
+
+$(LIBSPH) : libvesph.cpp
+	@echo "Building $< ..."
+	@$(NCC) $(NCFLAGS) $(PS_PATH) -fpic -shared -o $(LIBSPH) libvesph.cpp
+	@echo "[$< OK]"
+
+clean:
+	-rm *.out *.o *.so *.L
+	rm -rf result
+
+distclean: clean
+	rm -rf result
+
+# fdps-autotest-run (DO NOT CHANGE THIS LINE)
